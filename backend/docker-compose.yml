@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: sih_postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: sih_user
+      POSTGRES_PASSWORD: sih_secure_password_2026
+      POSTGRES_DB: sih_career_db
+    ports:
+      - "5433:5432" # Map host port 5433 to container port 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sih_user -d sih_career_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: sih_backend_api
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_SERVER=db
+      - POSTGRES_PORT=5432 # Internal container port is always 5432
+      - POSTGRES_USER=sih_user
+      - POSTGRES_PASSWORD=sih_secure_password_2026
+      - POSTGRES_DB=sih_career_db
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - ENVIRONMENT=production
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
