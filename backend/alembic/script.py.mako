@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-${imports!s}
+${imports}
 
 # revision identifiers, used by Alembic.
 revision: Union[str, None] = ${repr(up_revision)}

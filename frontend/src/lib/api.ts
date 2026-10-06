@@ -1,6 +1,49 @@
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
 
+  function getApiErrorMessage(
+  data: unknown,
+  fallback: string,
+): string {
+  if (!data || typeof data !== "object") {
+    return fallback;
+  }
+
+  const errorData = data as {
+    detail?: unknown;
+    message?: unknown;
+  };
+  if (typeof errorData.detail === "string") {
+    return errorData.detail;
+  }
+
+  if (Array.isArray(errorData.detail)) {
+    const messages = errorData.detail
+      .map((error) => {
+        if (
+          error &&
+          typeof error === "object" &&
+          "msg" in error &&
+          typeof error.msg === "string"
+        ) {
+          return error.msg;
+        }
+
+        return null;
+      })
+      .filter((message): message is string => Boolean(message));
+
+    if (messages.length > 0) {
+      return messages.join(". ");
+    }
+  }
+
+  if (typeof errorData.message === "string") {
+    return errorData.message;
+  }
+
+  return fallback;
+}
 // --- Authentication Types ---
 
 export interface CaptchaData {
@@ -116,7 +159,6 @@ export interface MediationResponse {
 }
 
 // --- Authentication Endpoints ---
-
 export async function fetchCaptcha(): Promise<CaptchaData> {
   const res = await fetch(`${API_BASE_URL}/auth/captcha`, {
     cache: "no-store",
@@ -133,20 +175,36 @@ export async function registerUser(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Registration failed");
-  return data;
+
+  const data: unknown = await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      getApiErrorMessage(data, "Registration failed"),
+    );
+  }
+
+  return data as AuthResponse;
 }
 
-export async function loginUser(payload: LoginPayload): Promise<AuthResponse> {
+export async function loginUser(
+  payload: LoginPayload,
+): Promise<AuthResponse> {
   const res = await fetch(`${API_BASE_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Login failed");
-  return data;
+
+  const data: unknown = await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      getApiErrorMessage(data, "Login failed"),
+    );
+  }
+
+  return data as AuthResponse;
 }
 
 // --- Assessment Endpoints (Original Names Restored) ---
