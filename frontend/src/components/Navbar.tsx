@@ -21,7 +21,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const navItems = [
     { id: "explore", label: "Explore Careers" },
-    { id: "assessment", label: "Micro-Assessment" },
     { id: "profile", label: "Decision Profile" },
     { id: "roadmap", label: "Career Graph" },
     { id: "family", label: "Family Decision Room" },

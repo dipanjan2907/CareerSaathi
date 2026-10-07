@@ -1,12 +1,15 @@
 from typing import List, Optional
 from pydantic import BaseModel, Field
-
+from pydantic import BaseModel, ConfigDict, Field
+from typing import List
 
 class ConstraintEvaluation(BaseModel):
     constraint_type: str
     passed: bool
     severity: str
     message: str
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CareerFitResult(BaseModel):
@@ -19,6 +22,8 @@ class CareerFitResult(BaseModel):
     skill_gaps: List[str]
     constraint_evaluations: List[ConstraintEvaluation]
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class CareerDecisionResponse(BaseModel):
     student_id: str
@@ -27,6 +32,7 @@ class CareerDecisionResponse(BaseModel):
     recommendations: List[CareerFitResult]
     counselling_explanation: str
 
+    model_config = ConfigDict(from_attributes=True)
 
 class TradeoffFactor(BaseModel):
     factor_name: str
@@ -46,3 +52,4 @@ class FamilyMediationResponse(BaseModel):
     family_career_title: str
     tradeoffs: List[TradeoffFactor]
     neutral_mediation_summary: str
+
