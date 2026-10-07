@@ -125,7 +125,23 @@ export interface DecisionResponse {
   recommendations: Recommendation[];
   counselling_explanation: string;
 }
+export interface ScenarioOption {
+  option_key: string;
+  option_text: string;
+  competency_impacts: Record<string, number>;
+}
 
+export interface ScenarioItem {
+  scenario_id: string;
+  scenario_title: string;
+  scenario_description: string;
+  options: ScenarioOption[];
+}
+
+export interface GeneratedScenarioBatch {
+  sector: string;
+  scenarios: ScenarioItem[];
+}
 export interface CareerGraphNode {
   id: string;
   label: string;

@@ -19,10 +19,6 @@ async def submit_assessment(
     payload: AssessmentSubmissionRequest,
     db: AsyncSession = Depends(get_db_session),
 ):
-    """
-    Processes scenario-based micro-assessment responses and calculates
-    the updated competency vector for the student profile.
-    """
     try:
         service = AssessmentService(session=db)
         vector = await service.submit_assessment_responses(
@@ -41,10 +37,6 @@ async def generate_dynamic_scenario(
     ),
     llm_provider: BaseLLMProvider = Depends(get_llm_provider),
 ):
-    """
-    Dynamically generates a domain-specific micro-assessment scenario using Gemini
-    constrained by strict JSON schema enforcement.
-    """
     try:
         scenario_data = await llm_provider.generate_domain_scenario(sector=sector)
         return scenario_data

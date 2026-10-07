@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 class BaseLLMProvider(ABC):
@@ -15,4 +15,11 @@ class BaseLLMProvider(ABC):
         self, mediation_payload: Dict[str, Any], language: str = "English"
     ) -> str:
         """Provides neutral trade-off summary for family decision room."""
+        pass
+
+    @abstractmethod
+    async def generate_domain_scenario(
+        self, sector: str, difficulty_level: str = "intermediate"
+    ) -> Dict[str, Any]:
+        """Dynamically generates a domain-specific micro-assessment scenario."""
         pass

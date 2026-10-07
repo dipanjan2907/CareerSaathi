@@ -1,9 +1,10 @@
 import uuid
-from typing import List, Dict, Any
+from typing import Dict, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import NotFoundException
 from app.domain.decision_engine import DomainDecisionEngine
 from app.infrastructure.llm.base import BaseLLMProvider
+from app.models.assessment import AssessmentResult 
 from app.repositories.career_repository import CareerRepository
 from app.repositories.student_repository import StudentRepository
 from app.schemas.decision import CareerDecisionResponse, CareerFitResult
@@ -17,7 +18,10 @@ class DecisionService:
         self.llm_provider = llm_provider
 
     async def evaluate_student_decision(
-        self, student_id: uuid.UUID, language: str = "English"
+        self,
+        student_id: uuid.UUID,
+        sector: str = "General Vocational",
+        language: str = "English",
     ) -> CareerDecisionResponse:
         student = await self.student_repo.get_by_id(student_id)
         if not student:
@@ -31,6 +35,7 @@ class DecisionService:
         careers = await self.career_repo.list_all()
         ranked_results: List[CareerFitResult] = []
 
+        # 1. Rank all careers using the deterministic decision engine
         for career in careers:
             fit_result = DomainDecisionEngine.rank_career(
                 career_id=str(career.id),
@@ -47,11 +52,11 @@ class DecisionService:
             )
             ranked_results.append(fit_result)
 
-        # Sort by match score descending
+        # 2. Sort by match score descending and select top 5
         ranked_results.sort(key=lambda x: x.match_score, reverse=True)
         top_careers = ranked_results[:5]
 
-        # Derive Statistical Confidence
+        # 3. Derive statistical confidence rating
         confidence_score, confidence_rating = (
             DomainDecisionEngine.calculate_confidence_score(
                 assessment_completed_count=10,
@@ -59,7 +64,7 @@ class DecisionService:
             )
         )
 
-        # Structure payload for LLM explanation service
+        # 4. Structure payload for LLM explanation
         structured_payload = {
             "student_profile": {
                 "budget": student.max_family_budget,
@@ -70,11 +75,23 @@ class DecisionService:
             "confidence_rating": confidence_rating,
         }
 
-        # LLM translates decision engine output
+        # 5. LLM generates natural explanation from structured output
         ai_explanation = await self.llm_provider.generate_counselling_explanation(
             payload=structured_payload, language=language
         )
 
+        # 6. Save snapshot of assessment & recommendations into PostgreSQL
+        assessment_record = AssessmentResult(
+            student_id=student.id,
+            sector=sector,
+            competency_vector=student.competency_vector,
+            recommendations_payload=[rec.model_dump() for rec in top_careers],
+            counselling_explanation=ai_explanation,
+        )
+        self.session.add(assessment_record)
+        await self.session.commit()
+
+        # 7. Return API response schema
         return CareerDecisionResponse(
             student_id=str(student.id),
             confidence_score=confidence_score,
